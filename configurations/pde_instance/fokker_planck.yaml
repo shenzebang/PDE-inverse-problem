@@ -1,0 +1,7 @@
+domain_dim: !!int 4
+domain_min: !!float -10
+domain_max: !!float 10
+boundary_condition: !!str None
+diffusion_coefficient: !!float 2
+total_evolving_time: !!float 2
+name: !!str Fokker-Planck
