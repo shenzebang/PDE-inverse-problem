@@ -52,10 +52,15 @@ def value_and_grad_fn(forward_fn, params, data, rng, pde_instance: FokkerPlanck)
         loss_nabla_true = jnp.mean(jnp.sum(nabla_V_true_vmap_x(data["0T"])**2, axis=-1))
         return (loss_nabla - 2 * loss_laplacian + loss_nabla_true) + (2 * loss_terminal - 2 * loss_initial)/pde_instance.total_evolving_time
     
+    def loss_ground_truth_fn(params):
+        return jnp.mean(jnp.sum((nabla_V_true_vmap_x(data["0T"]) - nabla_V_vmap_x(data["0T"], params))**2, axis=-1), axis=0)
+
     vg_fn = jax.value_and_grad(loss_fn)
     loss, grad = vg_fn(params)    
     grad_norm = compute_pytree_norm(grad)
-    return {"loss": loss, "grad": grad, "grad_norm": grad_norm}
+
+    
+    return {"loss": loss, "grad": grad, "grad_norm": grad_norm, "loss ground truth": loss_ground_truth_fn(params)}
 
 
 def test_fn(forward_fn, pde_instance: FokkerPlanck, rng):
@@ -83,14 +88,14 @@ def test_fn(forward_fn, pde_instance: FokkerPlanck, rng):
 
 def create_model_fn(pde_instance: FokkerPlanck):
     # net = KiNet(time_embedding_dim=20, append_time=False)
-    net = get_model(pde_instance.cfg)
-    params = net.init(random.PRNGKey(11), pde_instance.distribution_initial.sample(1, random.PRNGKey(1)))
+    net = get_model(pde_instance.cfg, DEBUG=False)
+    params = net.init(random.PRNGKey(11), pde_instance.distribution_initial.sample(1, random.PRNGKey(1))[0])
     # params = net.init(random.PRNGKey(11), jnp.zeros(1),
     #                   jnp.squeeze(pde_instance.distribution_0.sample(1, random.PRNGKey(1))))
 
-    print("Pretraining the potential function to improve the performance.")
-    params = potential_pretraining(pde_instance=pde_instance, net=net, params=params)
-    print("Finished pretraining.")
+    # print("Pretraining the potential function to improve the performance.")
+    # params = potential_pretraining(pde_instance=pde_instance, net=net, params=params)
+    # print("Finished pretraining.")
 
     return net, params
 

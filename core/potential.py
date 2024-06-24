@@ -4,7 +4,7 @@ from utils.common_utils import v_matmul
 import warnings
 
 class Potential(object):
-    def gradient(self, x: jnp.DeviceArray):
+    def gradient(self, x: jnp.ndarray):
         raise NotImplementedError
 
 
@@ -25,7 +25,7 @@ class QuadraticPotential(Potential):
 
 
 class VoidPotential(Potential):
-    def gradient(self, x: jnp.DeviceArray):
+    def gradient(self, x: jnp.ndarray):
         return jnp.zeros_like(x)
 
 
@@ -46,7 +46,7 @@ g_gmm_V = jax.grad(gmm_V) # by default, grad computes gradient w.r.t. the first 
 vg_gmm_V = jax.vmap(g_gmm_V, in_axes=[0, None, None]) # only apply autobatching to the first input
 
 class GMMPotential(Potential):
-    def __init__(self, mus: jnp.DeviceArray, sigma: jnp.DeviceArray):
+    def __init__(self, mus: jnp.ndarray, sigma: jnp.ndarray):
         # we assume that the Gaussian component has the same sigma for simplicity
         self.mus = mus
         self.sigma = sigma
