@@ -12,14 +12,15 @@ def get_optimizer(optimizer_cfg: DictConfig):
         if optimizer_cfg.learning_rate.scheduling == "None":
             lr_schedule = optimizer_cfg.learning_rate.initial
         elif optimizer_cfg.learning_rate.scheduling == "cosine":
-            lr_schedule = optax.cosine_decay_schedule(optimizer_cfg.learning_rate.initial, 20000, 0.1)
+            lr_schedule = optax.cosine_decay_schedule(optimizer_cfg.learning_rate.initial, 10000, 0.05)
         else:
             raise NotImplementedError
 
-        optimizer = optax.chain(optax.clip(optimizer_cfg.grad_clipping.threshold),
+        optimizer = optax.chain(
+            # optax.clip(optimizer_cfg.grad_clipping.threshold),
             # optax.adaptive_grad_clip(optimizer_cfg.grad_clipping.threshold),
                                 optax.add_decayed_weights(optimizer_cfg.weight_decay),
-                                optax.adam(learning_rate=lr_schedule),
+                                optax.adam(learning_rate=lr_schedule, b1=0.9, eps=1e-4),
                                 # optax.sgd(learning_rate=lr_schedule, momentum=optimizer_cfg.momentum)
                                 )
     else:
@@ -29,7 +30,7 @@ def get_optimizer(optimizer_cfg: DictConfig):
 
 @hydra.main(config_path="configurations", config_name="config")
 def main(cfg):
-    print(OmegaConf.to_yaml(cfg))
+    # print(OmegaConf.to_yaml(cfg))
     wandb.login()
     pde_instance_name = f"{cfg.pde_instance.domain_dim}D-{cfg.pde_instance.name}"
     run = wandb.init(

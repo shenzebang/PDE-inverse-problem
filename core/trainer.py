@@ -6,6 +6,11 @@ from utils.common_utils import compute_pytree_norm
 from api import Method
 import jax.random as random
 from optax import GradientTransformation
+from functools import partial
+from optax._src.transform import EmaState
+
+
+
 
 class JaxTrainer:
     def __init__(self,
@@ -27,7 +32,8 @@ class JaxTrainer:
 
         # initialize the opt_state
         opt_state = self.optimizer.init(self.params)
-
+        ema = optax.ema(0.999)
+        ema_state = ema.init(self.params)
         # jit or pmap the gradient computation for efficiency
         def value_and_grad_fn(params, rng):
             return self.method.value_and_grad_fn(self.forward_fn, params, rng)
@@ -47,11 +53,18 @@ class JaxTrainer:
             value_and_grad_fn_efficient = jax.jit(value_and_grad_fn)
             # value_and_grad_fn_efficient = value_and_grad_fn
 
-        @jax.jit
-        def step(params, opt_state, grad):
+        custom_jit = partial(jax.jit, static_argnums=(4,))
+
+        @custom_jit
+        def step(params, opt_state, grad, ema_state, use_ema=False):
             updates, opt_state = self.optimizer.update(grad, opt_state, params)
             params = optax.apply_updates(params, updates)
-            return params, opt_state
+            if not use_ema:
+                return params, opt_state
+            else:
+                updates, ema_state = ema.update(params, ema_state)
+                params = ema_state.ema
+                return params, opt_state, ema_state
 
         @jax.jit
         def test(params, rng):
@@ -67,7 +80,15 @@ class JaxTrainer:
             rng_train, rng_test, rng_plot = random.split(rng, 3)
 
             v_g_etc = value_and_grad_fn_efficient(self.params, rng_train)
-            self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"])
+            
+            if epoch < 20000:
+                self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=False)
+            else:
+                if epoch == 20000:
+                    ema_state = EmaState(
+                            count=jnp.zeros([], jnp.int32),
+                            ema=self.params)
+                self.params, opt_state, ema_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=True)
 
             v_g_etc.pop("grad")
             params_norm = compute_pytree_norm(self.params)
