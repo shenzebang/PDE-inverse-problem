@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import jax
 from flax import linen as nn
 from typing import Tuple
+from api import ProblemInstance
 
 # for DEBUG
 from example_problems.fokker_planck_example import initialize_configuration
@@ -63,10 +64,12 @@ class V_hypothesis(nn.Module):
 class V_hypothesis_DEBUG(nn.Module):
     output_dim: int 
     hidden_dims: Tuple[int]
+    pde_instance: ProblemInstance
+
     def setup(self):
         # self.layers = [nn.Dense(dim_out, kernel_init=nn.initializers.xavier_uniform()) for dim_out in list(self.hidden_dims) + [self.output_dim]]
         # self.layers = [nn.Dense(dim_out, kernel_init=nn.initializers.kaiming_normal()) for dim_out in [self.output_dim]]
-        self.F = nn.Dense(2)
+        self.F = nn.Dense(self.pde_instance.dim)
         # self.layers = [nn.Dense(dim_out, kernel_init=nn.initializers.kaiming_normal()) for dim_out in
                     #    list(self.hidden_dims) + [self.output_dim]]
 
@@ -114,7 +117,8 @@ def get_model(cfg, DEBUG=False, pde_instance=None):
                           hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers
                           )
         else:
-            model = V_hypothesis_DEBUG(output_dim=1, hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers)
+            model = V_hypothesis_DEBUG(output_dim=1, hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers,
+                                       pde_instance=pde_instance)
 
         return model
 

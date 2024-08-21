@@ -12,7 +12,7 @@ def get_optimizer(optimizer_cfg: DictConfig):
         if optimizer_cfg.learning_rate.scheduling == "None":
             lr_schedule = optimizer_cfg.learning_rate.initial
         elif optimizer_cfg.learning_rate.scheduling == "cosine":
-            lr_schedule = optax.cosine_decay_schedule(optimizer_cfg.learning_rate.initial, 10000, 0.05)
+            lr_schedule = optax.cosine_decay_schedule(optimizer_cfg.learning_rate.initial, 10000, 0.02)
         else:
             raise NotImplementedError
 

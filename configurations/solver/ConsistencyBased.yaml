@@ -1,3 +1,8 @@
 train:
-  batch_size_ref: !!int 50000
+  batch_size_init: !!int 50000
+  batch_size_terminal: !!int 50000
+  batch_size_0T: !!int 50000
+  n_time_stamps: !!int 200
+  sample_per_time: !!int 250
+  sample_mode: !!str random_time # either random_time or grid_time
 name: !!str ConsistencyBased

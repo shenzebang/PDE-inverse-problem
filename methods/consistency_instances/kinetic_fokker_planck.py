@@ -2,10 +2,10 @@ import jax
 import jax.numpy as jnp
 from example_problems.kinetic_fokker_planck_example import KineticFokkerPlanck
 from core.model import get_model
-from utils.common_utils import compute_pytree_norm
+from utils.common_utils import compute_pytree_norm, hessian_vector_product
 import jax.random as random
 import optax
-
+from functools import partial
 
 def value_and_grad_fn(forward_fn, params, data, rng, pde_instance: KineticFokkerPlanck):
     # split the data into x and v
@@ -15,24 +15,26 @@ def value_and_grad_fn(forward_fn, params, data, rng, pde_instance: KineticFokker
     
     V = lambda x, params: forward_fn(params, x)[0]
     nabla_V = jax.grad(V, argnums=0)
-    hessian_V = jax.jacfwd(nabla_V, argnums=0)
+
+    @partial(jax.vmap, in_axes=[0, 0, None])
+    def my_prod(x, v, params):
+        f = lambda x: V(x, params)
+        return jnp.dot(v, hessian_vector_product(f, x, v))
+    # my_prod = jax.vmap(my_prod, in_axes=[0, 0, None])
     
+
     nabla_V_vmap_x = jax.vmap(nabla_V, in_axes=[0, None])
-    hessian_V_vmap_x = jax.vmap(hessian_V, in_axes=[0, None])
     
     V_true = lambda x: pde_instance.V_true_fn(x)
     nabla_V_true = jax.grad(V_true, argnums=0)
     nabla_V_true_vmap_x = jax.vmap(nabla_V_true, in_axes=[0])
 
-    @jax.vmap
-    def my_prod(H, v):
-        return jnp.dot(v, H @ v)
-
+    
     def loss_fn(params):
         loss_initial = jnp.mean(jnp.sum(nabla_V_vmap_x(x_initial, params) * v_initial, -1))
         loss_terminal = jnp.mean(jnp.sum(nabla_V_vmap_x(x_terminal, params) * v_terminal, -1))
         loss_nabla = jnp.mean(jnp.sum(nabla_V_vmap_x(x_0T, params) ** 2, axis=-1))
-        loss_Hessian = jnp.mean(my_prod(hessian_V_vmap_x(x_0T, params), v_0T))
+        loss_Hessian = jnp.mean(my_prod(x_0T, v_0T, params))
 
         loss_nabla_true = jnp.mean(jnp.sum(nabla_V_true_vmap_x(x_0T)**2, axis=-1))
         return (loss_nabla - 2 * loss_Hessian + loss_nabla_true) + (- 2 * loss_initial + 2 * loss_terminal)/pde_instance.total_evolving_time
@@ -72,7 +74,7 @@ def test_fn(forward_fn, pde_instance: KineticFokkerPlanck, rng):
     # return {"KL": KL, "Fisher Information": Fisher_information}
 
 def create_model_fn(pde_instance: KineticFokkerPlanck):
-    net = get_model(pde_instance.cfg, DEBUG=False)
+    net = get_model(pde_instance.cfg, DEBUG=False, pde_instance=pde_instance)
     x, v = jnp.split(pde_instance.distribution_initial.sample(1, random.PRNGKey(1))[0], indices_or_sections=2, axis=-1)
     params = net.init(random.PRNGKey(11), x)
     return net, params

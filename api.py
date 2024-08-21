@@ -1,7 +1,7 @@
 from core.distribution import Distribution
 import jax.numpy as jnp
 import flax.linen as nn
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 from jax._src.typing import Array as KeyArray
 from dataclasses import dataclass
 from omegaconf import DictConfig
@@ -28,9 +28,12 @@ class ProblemInstance:
         self.dim = cfg.pde_instance.domain_dim
         self.diffusion_coefficient = jnp.ones([]) * cfg.pde_instance.diffusion_coefficient
         self.total_evolving_time = jnp.ones([]) * cfg.pde_instance.total_evolving_time
-        self.distribution_time = Uniform(jnp.zeros([]), self.total_evolving_time)
+        self.distribution_time = Uniform(jnp.ones([]) * 0.0001, self.total_evolving_time) # starting from 1e-4 to avoid numerical issue
     
-    def sample_ground_truth(self, rng, batch_size: int):
+    def sample_ground_truth(self, rng, batch_size: Union[int, Tuple[int, int]]):
+        # if batch_size is int, randomly generate the evolving time
+        # if batch_size is (int, int), batch_size[0] denotes the number of time stamps 
+        #       and batch_size[1] denotes the number of samples per time stamp
         pass
 
 @dataclass

@@ -1,0 +1,9 @@
+flax
+hydra-core
+jax
+matplotlib
+numpy
+omegaconf
+optax
+pandas
+seaborn

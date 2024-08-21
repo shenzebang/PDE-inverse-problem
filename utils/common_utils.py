@@ -3,6 +3,15 @@ import jax.numpy as jnp
 import math
 
 
+def hessian_vector_product(f, x, v):
+    # Step 1: Compute the gradient of f with respect to x
+    grad_f = jax.grad(f)
+
+    # Step 2: Compute the Hessian-vector product
+    # The first output of jvp is the gradient (which we already know), so we ignore it with _
+    _, hvp = jax.jvp(grad_f, (x,), (v,))
+    
+    return hvp
 
 
 def _divergence_fn(f, _x, _v):

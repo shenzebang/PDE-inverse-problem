@@ -8,7 +8,7 @@ import jax.random as random
 from optax import GradientTransformation
 from functools import partial
 from optax._src.transform import EmaState
-
+from tqdm import trange
 
 
 
@@ -75,7 +75,7 @@ class JaxTrainer:
             return self.method.plot_fn(self.forward_fn, params, rng)
 
         rngs = jax.random.split(self.rng, self.cfg.train.number_of_iterations)
-        for epoch in range(self.cfg.train.number_of_iterations):
+        for epoch in trange(self.cfg.train.number_of_iterations):
             rng = rngs[epoch]
             rng_train, rng_test, rng_plot = random.split(rng, 3)
 
@@ -93,6 +93,7 @@ class JaxTrainer:
             v_g_etc.pop("grad")
             params_norm = compute_pytree_norm(self.params)
             v_g_etc["params_norm"] = params_norm
+            assert not jnp.isnan(v_g_etc["loss"]) 
             wandb.log(v_g_etc, step=epoch)
             if (epoch % self.cfg.test.frequency == 0 and self.method.test_fn is not None) or epoch >= self.cfg.train.number_of_iterations - 3:
                 result_epoch = test(self.params, rng_test)
