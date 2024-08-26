@@ -64,10 +64,13 @@ def OU_process(t_space: jnp.ndarray, configuration):
             "P": configuration["F"] @ states["P"] + states["P"] @ configuration["F"].transpose() + configuration["L"],
         }
     state_T = odeint(ode_func, state_0, t_space)
+    # print(state_T["m"][1:].shape, state_T["P"][1:].shape)
+    # print(state_T["m"][-1].shape, state_T["P"][-1].shape)
+    # return state_T["m"][1:], state_T["P"][1:]
     if jnp.size(t_space) == 2:
         return state_T["m"][-1], state_T["P"][-1]
     else:
-        return state_T["m"], state_T["P"]
+        return state_T["m"][1:], state_T["P"][1:]
 
 def get_mean_cov(t: jnp.ndarray, configuration):
     if jnp.size(t) == 1:
@@ -122,11 +125,12 @@ class KineticFokkerPlanck(ProblemInstance):
             rng_time_shift, rng = jax.random.split(rng)
             n_time_stamps = batch_size[0]
             sample_per_time = batch_size[1]
-            random_time_shift = jax.random.uniform(rng_time_shift, [n_time_stamps]) * self.total_evolving_time / n_time_stamps
-            time_stamps = jnp.linspace(0, self.total_evolving_time, n_time_stamps) + random_time_shift
+            random_time_shift = jax.random.uniform(rng_time_shift, [n_time_stamps+1]) * self.total_evolving_time / (n_time_stamps+1)
+            time_stamps = jnp.linspace(0, self.total_evolving_time, n_time_stamps+1) + random_time_shift
             time_stamps = jnp.concatenate([jnp.zeros([1]), time_stamps[:-1]])
             rngs = jax.random.split(rng, n_time_stamps)
             means, covs = self.get_mean_cov(time_stamps)
+            # means, covs = means[1:], covs[1:]
             @jax.vmap
             def _sample_ground_truth_fn(mean, cov, rng):
                 return Gaussian(mean, cov).sample(sample_per_time, rng)

@@ -81,10 +81,10 @@ class JaxTrainer:
 
             v_g_etc = value_and_grad_fn_efficient(self.params, rng_train)
             
-            if epoch < 20000:
+            if epoch < 40000:
                 self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=False)
             else:
-                if epoch == 20000:
+                if epoch == 40000:
                     ema_state = EmaState(
                             count=jnp.zeros([], jnp.int32),
                             ema=self.params)
