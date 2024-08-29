@@ -4,5 +4,6 @@ domain_max: !!float 10
 boundary_condition: !!str None
 diffusion_coefficient: !!float 2
 total_evolving_time: !!float 2
-name: !!str Fokker-Planck
+name: !!str Kinetic-Fokker-Planck
 potential: !!str Quadratic # either Quadratic or GMM
+n_steps: !!float 100 # number of discretization steps 

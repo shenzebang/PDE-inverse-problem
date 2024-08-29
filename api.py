@@ -29,6 +29,7 @@ class ProblemInstance:
         self.diffusion_coefficient = jnp.ones([]) * cfg.pde_instance.diffusion_coefficient
         self.total_evolving_time = jnp.ones([]) * cfg.pde_instance.total_evolving_time
         self.distribution_time = Uniform(jnp.ones([]) * 0.0001, self.total_evolving_time) # starting from 1e-4 to avoid numerical issue
+        self.sample_scheme = "exact" # should either be "exact" or "SDE"
     
     def sample_ground_truth(self, rng, batch_size: Union[int, Tuple[int, int]]):
         # if batch_size is int, randomly generate the evolving time

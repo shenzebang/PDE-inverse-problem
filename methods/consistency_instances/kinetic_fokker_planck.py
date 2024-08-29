@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from example_problems.kinetic_fokker_planck_example import KineticFokkerPlanck
+from example_problems.kinetic_fokker_planck_example_OU import KineticFokkerPlanck
 from core.model import get_model
 from utils.common_utils import compute_pytree_norm, hessian_vector_product
 import jax.random as random
@@ -35,9 +35,11 @@ def value_and_grad_fn(forward_fn, params, data, rng, pde_instance: KineticFokker
         loss_terminal = jnp.mean(jnp.sum(nabla_V_vmap_x(x_terminal, params) * v_terminal, -1))
         loss_nabla = jnp.mean(jnp.sum(nabla_V_vmap_x(x_0T, params) ** 2, axis=-1))
         loss_Hessian = jnp.mean(my_prod(x_0T, v_0T, params))
+        loss_friction = jnp.mean(jnp.sum(nabla_V_vmap_x(x_0T, params) * v_0T, -1)) * pde_instance.initial_configuration["gamma_friction"]
 
         loss_nabla_true = jnp.mean(jnp.sum(nabla_V_true_vmap_x(x_0T)**2, axis=-1))
-        return (loss_nabla - 2 * loss_Hessian + loss_nabla_true) + (- 2 * loss_initial + 2 * loss_terminal)/pde_instance.total_evolving_time
+        return (loss_nabla - 2 * loss_Hessian + 2 * loss_friction + loss_nabla_true) \
+                + (- 2 * loss_initial + 2 * loss_terminal)/pde_instance.total_evolving_time
     
     def loss_ground_truth_fn(params):
         return jnp.mean(jnp.sum((nabla_V_true_vmap_x(x_0T) - nabla_V_vmap_x(x_0T, params))**2, axis=-1), axis=0)

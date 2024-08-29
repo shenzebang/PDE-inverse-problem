@@ -11,6 +11,8 @@ import warnings
 
 
 def initialize_configuration(domain_dim: int):
+    gamma_friction = .1
+
     tilde_F_scale = 1.
     tilde_L_scale = 2.
 
@@ -37,7 +39,7 @@ def initialize_configuration(domain_dim: int):
     tilde_F = _F @ _F.transpose() * tilde_F_scale # Symmetry is necessary, otherwise, it does not correspond to a gradient field.
     F = jnp.block([
         [jnp.eye(domain_dim) * 0., jnp.eye(domain_dim)],
-        [-tilde_F,            jnp.eye(domain_dim) * 0.]
+        [-tilde_F,            -jnp.eye(domain_dim) * gamma_friction]
     ])
 
     tilde_L = jnp.eye(domain_dim) * tilde_L_scale
@@ -47,6 +49,7 @@ def initialize_configuration(domain_dim: int):
     ])
     
     return {
+        "gamma_friction": gamma_friction,
         "tilde_F": tilde_F,
         "F": F,
         "L": L,

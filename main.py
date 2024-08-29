@@ -32,7 +32,7 @@ def get_optimizer(optimizer_cfg: DictConfig):
 def main(cfg):
     # print(OmegaConf.to_yaml(cfg))
     wandb.login()
-    pde_instance_name = f"{cfg.pde_instance.domain_dim}D-{cfg.pde_instance.name}"
+    pde_instance_name = f"{cfg.pde_instance.domain_dim}D-{cfg.pde_instance.name}-{cfg.pde_instance.potential}"
     run = wandb.init(
         # Set the project where this run will be logged
         project=f"{pde_instance_name}-{cfg.solver.name}-{cfg.pde_instance.total_evolving_time}",

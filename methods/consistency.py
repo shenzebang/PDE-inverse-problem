@@ -40,15 +40,26 @@ class ConsistencyBased(Method):
 
     def sample_data(self, rng):
         rng_initial, rng_terminal, rng_0T = random.split(rng, 3)
-        batch_size_0T = {
-            "random_time": self.cfg.solver.train.batch_size_0T,
-            "grid_time": (self.cfg.solver.train.n_time_stamps, self.cfg.solver.train.sample_per_time)
-        }
-        data = {
-            "initial"  : self.pde_instance.distribution_initial.sample(self.cfg.solver.train.batch_size_init, rng_initial),
-            "terminal" : self.pde_instance.distribution_terminal.sample(self.cfg.solver.train.batch_size_terminal, rng_terminal),
-            "0T"       : self.pde_instance.sample_ground_truth(rng_0T, batch_size_0T[self.cfg.solver.train.sample_mode])
-        }
+        if self.pde_instance.sample_scheme == "exact":
+            batch_size_0T = {
+                "random_time": self.cfg.solver.train.batch_size_0T,
+                "grid_time": (self.cfg.solver.train.n_time_stamps, self.cfg.solver.train.sample_per_time)
+            }
+            data = {
+                "initial"  : self.pde_instance.distribution_initial.sample(self.cfg.solver.train.batch_size_init, rng_initial),
+                "terminal" : self.pde_instance.distribution_terminal.sample(self.cfg.solver.train.batch_size_terminal, rng_terminal),
+                "0T"       : self.pde_instance.sample_ground_truth(rng_0T, batch_size_0T[self.cfg.solver.train.sample_mode])
+            }
+        elif self.pde_instance.sample_scheme == "SDE":
+            # always use grid_time mode in the SDE sampling scheme
+            data = {}
+            # data = {
+            #     "initial"  : self.pde_instance.distribution_initial.sample(self.cfg.solver.train.batch_size_init, rng_initial),
+            # }
+            # sample ground truth should return the initial, terminal and 0T samples
+            data["initial"], data["terminal"], data["0T"] = self.pde_instance.sample_ground_truth(rng_0T, self.cfg.solver.train.batch_size_0T)
+        else:
+            raise ValueError("unknown sampling scheme")
         # For the Kinetic models, [x, v] are concatenated. 
         # The instance should handle this on its own.
         return data

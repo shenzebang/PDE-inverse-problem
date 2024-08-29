@@ -29,7 +29,7 @@ class VoidPotential(Potential):
         return jnp.zeros_like(x)
 
 
-def gmm_V(x, mus, sigma):
+def gmm_V(x: jnp.ndarray, mus: jnp.ndarray, sigma: jnp.ndarray):
     # we use the broadcasting mechanism
     a = - jnp.sum((x-mus)**2, axis=(1,))/(2 * sigma ** 2)
     return - jax.scipy.special.logsumexp(a)
@@ -50,6 +50,9 @@ class GMMPotential(Potential):
         # we assume that the Gaussian component has the same sigma for simplicity
         self.mus = mus
         self.sigma = sigma
+
+    def value(self, x):
+        return gmm_V(x, self.mus, self.sigma)
 
     def gradient(self, x):
         if len(x.shape) == 1:

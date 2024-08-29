@@ -12,6 +12,6 @@ python main.py\
     neural_network.hidden_dim=32\
     neural_network.layers=2\
     train.optimizer.learning_rate.initial=1e-2\
-    pde_instance.total_evolving_time=1\
+    pde_instance.total_evolving_time=2\
     train.optimizer.learning_rate.scheduling=cosine\
     backend.use_pmap_train=False

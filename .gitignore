@@ -2,4 +2,4 @@ outputs/
 multirun/
 __pycache__/
 .vscode/launch.json
-
+.DS_store

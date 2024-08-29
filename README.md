@@ -38,4 +38,14 @@ $$
 
 Given the Gaussian initial distribution $Z(0)\sim p_0 = \mathcal{N}(m^x(0), \mathbf{P}^x_0) \times \mathcal{N}(m^v(0), \mathbf{P}^v_0)$, one can hence calculate the mean and covariance for $Z(t)$ using the above ODE system.
 
-## Kinetic Fokker-Planck Equation
+## Kinetic Fokker-Planck Equation with GMM potential
+Consider the Kinetic Langevin dynamics
+
+$$
+\begin{aligned}
+\mathrm{d} X(t) =&\ V(t) \mathrm{d} t, \\
+\mathrm{d} V(t) =&\ -\nabla U(X(t)) \mathrm{d} t + \sqrt{\mathbf{\tilde L}} \mathrm{d} W(t).
+\end{aligned}
+$$
+
+Every Gaussian in the GMM has isotropic noise.
