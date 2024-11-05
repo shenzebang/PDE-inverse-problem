@@ -81,14 +81,17 @@ class JaxTrainer:
 
             v_g_etc = value_and_grad_fn_efficient(self.params, rng_train)
             
-            if epoch < 40000:
-                self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=False)
+            if self.cfg.train.optimizer.use_ema:
+                if epoch < 40000:
+                    self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=False)
+                else:
+                    if epoch == 40000:
+                        ema_state = EmaState(
+                                count=jnp.zeros([], jnp.int32),
+                                ema=self.params)
+                    self.params, opt_state, ema_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=True)
             else:
-                if epoch == 40000:
-                    ema_state = EmaState(
-                            count=jnp.zeros([], jnp.int32),
-                            ema=self.params)
-                self.params, opt_state, ema_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=True)
+                self.params, opt_state = step(self.params, opt_state, v_g_etc["grad"], ema_state, use_ema=False)
 
             v_g_etc.pop("grad")
             params_norm = compute_pytree_norm(self.params)
