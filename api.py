@@ -30,11 +30,18 @@ class ProblemInstance:
         self.total_evolving_time = jnp.ones([]) * cfg.pde_instance.total_evolving_time
         self.distribution_time = Uniform(jnp.ones([]) * 0.0001, self.total_evolving_time) # starting from 1e-4 to avoid numerical issue
         self.sample_scheme = "exact" # should either be "exact" or "SDE"
+        self.sample_mode = "online" # should either be "online" or "offline"
     
     def sample_ground_truth(self, rng, batch_size: Union[int, Tuple[int, int]]):
         # if batch_size is int, randomly generate the evolving time
         # if batch_size is (int, int), batch_size[0] denotes the number of time stamps 
         #       and batch_size[1] denotes the number of samples per time stamp
+        pass
+
+    def generate_ground_truth_dataset(self, rng):
+        # This is used for offline training: The training set is fixed a priori. 
+        # returns a dictionary with ndarrys named "sample_initial", "sample_0T", "sample_terminal"
+        # The sizes of these ndarrays are determined by cfg
         pass
 
 @dataclass

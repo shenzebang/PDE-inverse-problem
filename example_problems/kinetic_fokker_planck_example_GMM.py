@@ -53,15 +53,23 @@ def initialize_configuration(domain_dim: int, rng):
 class KineticFokkerPlanck(ProblemInstance):
     def __init__(self, cfg, rng):
         super().__init__(cfg, rng)
-        self.initial_configuration = initialize_configuration(cfg.pde_instance.domain_dim, rng)
+        rng_initial_config, rng_dataset = jax.random.split(rng)
+
+
+        self.initial_configuration = initialize_configuration(cfg.pde_instance.domain_dim, rng_initial_config)
         
         # define the potential from configuration
         self.potential = GMMPotential(self.initial_configuration["GMM"]["mus"], jnp.ones([]))
         
         # for the "SDE" sampling scheme, only the initial distribution is available in a closed form
         self.sample_scheme = "SDE"
+        self.sample_mode = self.cfg.pde_instance.sample_mode
 
         self.distribution_initial = Gaussian(self.initial_configuration["m_0"], self.initial_configuration["P_0"])
+
+        if self.sample_mode == "offline":
+            self.dataset = self.generate_ground_truth_dataset(rng_dataset)
+
         
         
     def V_true_fn(self, x: jnp.ndarray): 
@@ -87,6 +95,7 @@ class KineticFokkerPlanck(ProblemInstance):
         # maybe have a random initial time offset
         _, sample_0T = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
                                                                      self.initial_configuration["gamma_friction"])
+        # flatten the tensor from [n_steps, batch_size, 2*dim] to [n_steps*batch_size, 2*dim]
         sample_0T = sample_0T.reshape((prod(sample_0T.shape[:2]), *sample_0T.shape[2:]))
 
         sample_initial = self.distribution_initial.sample(batch_size * multiple_init, rng_init2)
@@ -97,6 +106,7 @@ class KineticFokkerPlanck(ProblemInstance):
 
         return sample_initial, sample_final, sample_0T
     
+
     # def sample_ground_truth(self, rng, batch_size):
     #     # use Langevin dynamics to sample from the ground truth
     #     rng, rng_init = jax.random.split(rng)
@@ -110,5 +120,33 @@ class KineticFokkerPlanck(ProblemInstance):
     #                                                                  self.initial_configuration["gamma_friction"])
     #     sample_0T = sample_0T.reshape((prod(sample_0T.shape[:2]), *sample_0T.shape[2:]))
     #     return q0_p0, sample_final, sample_0T
+
+    def generate_ground_truth_dataset(self, rng):
+        rng_initial, rng_terminal, rng_0T = jax.random.split(rng, 3)
+
+        # generate sample_initial; Shape [sample_initial_size, 2*dim]
+        dataset = {
+            "initial": self.distribution_initial.sample(self.cfg.pde_instance.sample_initial_size, rng_initial),
+        }
+
+        # configs for sample_terminal; Shape [sample_terminal_size, 2*dim]
+        rng_terminal_0, rng_terminal_1 = jax.random.split(rng_terminal)
+        n_steps = self.cfg.pde_instance.n_steps_terminal
+        dt = self.total_evolving_time / n_steps
+        q0_p0 = self.distribution_initial.sample(self.cfg.pde_instance.sample_terminal_size, rng_terminal_0)
+        rngs = jax.random.split(rng_terminal_1, self.cfg.pde_instance.sample_terminal_size)
+        dataset["terminal"], _ = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
+                                                                     self.initial_configuration["gamma_friction"])
+
+        # configs for sample_OT; Shape [n_steps, sample_0T_size, 2*dim]
+        rng_0T_0, rng_0T_1 = jax.random.split(rng_0T)
+        n_steps = self.cfg.pde_instance.n_steps_0T
+        dt = self.total_evolving_time / n_steps
+        q0_p0 = self.distribution_initial.sample(self.cfg.pde_instance.sample_0T_size, rng_0T_0)
+        rngs = jax.random.split(rng_0T_1, self.cfg.pde_instance.sample_0T_size)
+        _, dataset["0T"] = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
+                                                                     self.initial_configuration["gamma_friction"])
+
+        return dataset
 
          
