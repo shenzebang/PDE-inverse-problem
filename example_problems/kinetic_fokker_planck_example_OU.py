@@ -7,7 +7,8 @@ from utils.common_utils import v_gaussian_score, v_gaussian_log_density
 from core.potential import QuadraticPotential
 from math import prod
 import warnings
-# To ensure that the coefficient of the Laplacian term in the FPE is 1, L should be sqrt{2}
+from flax import linen as nn
+# To ensure that the coefficient of the Laplacian term in the FPE is 1, L should be 2
 
 
 def initialize_configuration(domain_dim: int):
@@ -140,3 +141,15 @@ class KineticFokkerPlanck(ProblemInstance):
             samples = _sample_ground_truth_fn(means, covs, rngs)
 
         return samples.reshape((prod(samples.shape[:2]), *samples.shape[2:])) # combine the first two dimensions
+
+    def create_parametric_model(self):
+        class V_parametric(nn.Module):
+            def setup(self):
+                # Create a one-layer MLP for the mean
+                self.tilde_F = nn.Dense(self.pde_instance.dim)
+                
+            def __call__(self, y_input: jnp.ndarray):
+                # evaluate the GMM potential
+                return jnp.sum(y_input * self.tilde_F(y_input), axis=-1)[None]
+
+        return V_parametric()

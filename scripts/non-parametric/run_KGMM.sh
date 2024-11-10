@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0
+CUDA_VISIBLE_DEVICES=3
 python main.py\
     pde_instance.domain_dim=4\
     pde_instance=kinetic_fokker_planck\
@@ -10,4 +10,5 @@ python main.py\
     pde_instance.total_evolving_time=4\
     train.optimizer.learning_rate.scheduling=cosine\
     backend.use_pmap_train=False\
-    seed=2
+    seed=2\
+    estimation_mode=non-parametric

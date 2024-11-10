@@ -107,18 +107,26 @@ class V_hypothesis_DEBUG(nn.Module):
 
 
 def get_model(cfg, DEBUG=False, pde_instance=None):
-    if cfg.neural_network.n_resblocks > 0:
-        # use resnet
-        raise NotImplementedError
-    else:
-        # do not use resnet
-        if not DEBUG:
-            model = V_hypothesis(output_dim=1,
-                          hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers
-                          )
-        else:
-            model = V_hypothesis_DEBUG(output_dim=1, hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers,
-                                       pde_instance=pde_instance)
-
+    if cfg.estimation_mode == "parametric":
+        print("----Using parametric model----")
+        model = pde_instance.create_parametric_model()
         return model
+    elif cfg.estimation_mode == "non-parametric":
+        print("----Using non-parametric model----")
+        if cfg.neural_network.n_resblocks > 0:
+            # use resnet
+            raise NotImplementedError
+        else:
+            # do not use resnet
+            if not DEBUG:
+                model = V_hypothesis(output_dim=1,
+                            hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers
+                            )
+            else:
+                model = V_hypothesis_DEBUG(output_dim=1, hidden_dims=[cfg.neural_network.hidden_dim] * cfg.neural_network.layers,
+                                        pde_instance=pde_instance)
+
+            return model
+    else:
+        raise NotImplementedError
 

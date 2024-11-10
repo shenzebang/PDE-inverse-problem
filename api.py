@@ -44,6 +44,9 @@ class ProblemInstance:
         # The sizes of these ndarrays are determined by cfg
         pass
 
+    def create_parametric_model(self,):
+        pass
+    
 @dataclass
 class Method:
     # model: nn.Module

@@ -48,4 +48,5 @@ $$
 \end{aligned}
 $$
 
-Every Gaussian in the GMM has isotropic noise.
+Consider the GMM potential consists of `n_Gaussian` Gaussians models. 
+The covariance matrix of every Gaussian in the GMM is identity of size `domain_dim`$\times$`domain_dim`. 

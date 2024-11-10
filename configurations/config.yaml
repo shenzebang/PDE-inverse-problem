@@ -37,4 +37,5 @@ train:
       threshold: 1
 ODE_tolerance: !!float 1e-5
 seed: 1
-mode: !!str normal
+estimation_mode: !!str parametric # either parametric or non-parametric
+# mode: !!str normal

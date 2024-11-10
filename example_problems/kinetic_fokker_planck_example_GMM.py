@@ -4,10 +4,11 @@ import jax
 from jax.experimental.ode import odeint
 from api import ProblemInstance
 from utils.common_utils import v_gaussian_score, v_gaussian_log_density
-from core.potential import GMMPotential
+from core.potential import GMMPotential, gmm_V
 from utils.sampling_utils import underdamped_langevin_dynamics_scan
 from math import prod
 import warnings
+from flax import linen as nn
 # To ensure that the coefficient of the Laplacian term in the FPE is 1, L should be sqrt{2}
 
 
@@ -38,6 +39,7 @@ def initialize_configuration(domain_dim: int, rng):
     ])
 
     return {
+        "n_Gaussian": n_Gaussian,
         "gamma_friction": gamma_friction,
         "m_0": m_0,
         "P_0": P_0,
@@ -149,4 +151,25 @@ class KineticFokkerPlanck(ProblemInstance):
 
         return dataset
 
-         
+    def create_parametric_model(self):
+        model = V_parametric(dim=self.dim, n_Gaussians=self.initial_configuration["n_Gaussian"])
+
+        return model
+    
+class V_parametric(nn.Module):
+    dim: int
+    n_Gaussians: int
+    def setup(self):
+        # The GMM has uniform weights for each Gaussian, and each Gaussian has only the mean as variable.
+        # Create a one-layer MLP for every Gaussian
+        # self.mus = [nn.Dense(self.dim) for _ in range(self.n_Gaussians)]
+        self.mus = self.param(
+            'mus',  # Name of the variable
+            lambda rng, shape: jax.random.normal(rng, shape),  # Initialization function
+            (self.n_Gaussians, self.dim,)  # Shape of the variable
+        )
+        
+    def __call__(self, y_input: jnp.ndarray):
+        potential = GMMPotential(self.mus, jnp.ones([]))
+        # evaluate the GMM potential
+        return potential.value(y_input)[None]
