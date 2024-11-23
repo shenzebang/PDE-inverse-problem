@@ -45,7 +45,10 @@ def underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, key, potential_grad, 
     tau_end = dt - tau_0
     _, last_sample = update_step(final_state, tau_end, potential_grad, gamma_friction)
 
+    tau_trajectory = tau_0 + jnp.arange(n_steps) * dt # the time stamp at which the sample is taken
+
     # trajectory is a tuple of (positions, momenta)
     # append the initial sample to trajectory
-    return last_sample, jnp.concatenate([jnp.expand_dims(sample_after_shift, 0), trajectory])
+    return last_sample, jnp.concatenate([jnp.expand_dims(sample_after_shift, 0), trajectory]), tau_trajectory
+    
 

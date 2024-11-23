@@ -13,6 +13,7 @@ from core.distribution import Uniform
 
 class ProblemInstance:
     distribution_initial: Distribution
+    distribution_initial_x: Distribution
     distribution_terminal: Distribution
     distribution_time: Distribution
     total_evolving_time: jnp.ndarray = 1.

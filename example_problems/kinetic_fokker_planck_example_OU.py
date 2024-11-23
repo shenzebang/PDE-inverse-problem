@@ -56,6 +56,8 @@ def initialize_configuration(domain_dim: int):
         "L": L,
         "m_0": m_0,
         "P_0": P_0,
+        "m_x_0": m_x_0,
+        "P_x_0": P_x_0,
     }
 
 def OU_process(t_space: jnp.ndarray, configuration): 
@@ -96,7 +98,11 @@ class KineticFokkerPlanck(ProblemInstance):
         self.initial_configuration = initialize_configuration(cfg.pde_instance.domain_dim)
         self.get_mean_cov = lambda t: get_mean_cov(t, self.initial_configuration)
         self.distribution_initial = Gaussian(self.initial_configuration["m_0"], self.initial_configuration["P_0"])
+        self.distribution_initial_x = Gaussian(self.initial_configuration["m_x_0"], self.initial_configuration["P_x_0"])
         self.distribution_terminal = Gaussian(*self.get_mean_cov(self.total_evolving_time))
+
+        if self.sample_mode == "offline":
+            raise NotImplementedError
         # self.get_distribution(self.total_evolving_time)
 
     def V_true_fn(self, x: jnp.ndarray): 

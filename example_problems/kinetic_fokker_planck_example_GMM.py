@@ -4,7 +4,7 @@ import jax
 from jax.experimental.ode import odeint
 from api import ProblemInstance
 from utils.common_utils import v_gaussian_score, v_gaussian_log_density
-from core.potential import GMMPotential, gmm_V
+from core.potential import GMMPotential
 from utils.sampling_utils import underdamped_langevin_dynamics_scan
 from math import prod
 import warnings
@@ -43,6 +43,8 @@ def initialize_configuration(domain_dim: int, rng):
         "gamma_friction": gamma_friction,
         "m_0": m_0,
         "P_0": P_0,
+        "m_x_0": m_x_0,
+        "P_x_0": P_x_0,
 
         "GMM": {
             "mus": jnp.stack([jax.random.uniform(_rng, [domain_dim], minval=GMM_mean_min, maxval=GMM_mean_max) for _rng in rngs]),
@@ -68,6 +70,7 @@ class KineticFokkerPlanck(ProblemInstance):
         self.sample_mode = self.cfg.pde_instance.sample_mode
 
         self.distribution_initial = Gaussian(self.initial_configuration["m_0"], self.initial_configuration["P_0"])
+        self.distribution_initial_x = Gaussian(self.initial_configuration["m_x_0"], self.initial_configuration["P_x_0"])
 
         if self.sample_mode == "offline":
             self.dataset = self.generate_ground_truth_dataset(rng_dataset)
@@ -137,7 +140,7 @@ class KineticFokkerPlanck(ProblemInstance):
         dt = self.total_evolving_time / n_steps
         q0_p0 = self.distribution_initial.sample(self.cfg.pde_instance.sample_terminal_size, rng_terminal_0)
         rngs = jax.random.split(rng_terminal_1, self.cfg.pde_instance.sample_terminal_size)
-        dataset["terminal"], _ = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
+        dataset["terminal"], _, _ = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
                                                                      self.initial_configuration["gamma_friction"])
 
         # configs for sample_OT; Shape [n_steps, sample_0T_size, 2*dim]
@@ -146,7 +149,7 @@ class KineticFokkerPlanck(ProblemInstance):
         dt = self.total_evolving_time / n_steps
         q0_p0 = self.distribution_initial.sample(self.cfg.pde_instance.sample_0T_size, rng_0T_0)
         rngs = jax.random.split(rng_0T_1, self.cfg.pde_instance.sample_0T_size)
-        _, dataset["0T"] = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
+        _, dataset["0T"], dataset["tau_0T"] = underdamped_langevin_dynamics_scan(q0_p0, n_steps, dt, rngs, self.potential.gradient, 
                                                                      self.initial_configuration["gamma_friction"])
 
         return dataset

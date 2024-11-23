@@ -101,11 +101,11 @@ class BasicMLP(nn.Module):
     @nn.compact
     def __call__(self, X):
         out = nn.Sequential([
-            nn.Dense(32),
+            nn.Dense(8),
             ActivationFactory.create(self.act),
-            nn.Dense(64),
+            nn.Dense(16),
             ActivationFactory.create(self.act),
-            nn.Dense(64),
+            nn.Dense(16),
             ActivationFactory.create(self.act),
             nn.Dense(self.out_dim),
         ])(X)
@@ -207,6 +207,8 @@ class MNF(TDPFBase):
 
 
     def __call__(self, t, x0, reverse=False):
+        # if `reverse` is True, this is for computing the likelihood of X(t) = `x0`
+        # if `reverse` is False, this is for generating new data points at time `t` with X(0) = `x0`
         ldj_sum = 0
 
         couple_layers = self.couple_layers
@@ -222,7 +224,7 @@ class RealNVP(nn.Module):
     mnf: MNF
     log_prob_0: Any
 
-    def __call__(self, t, x0):
-        x, ldj_sum = self.mnf(t, x0, reverse=True)
-        return jnp.exp(self.log_prob_0(x) + ldj_sum)
+    def __call__(self, t, xt):
+        x0, ldj_sum = self.mnf(t, xt, reverse=True)
+        return self.log_prob_0(x0) + ldj_sum
 

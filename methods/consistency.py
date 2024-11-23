@@ -71,11 +71,10 @@ class ConsistencyBased(Method):
             }
             # sub-sample the 0T data
             rng_time, rng_sample = random.split(rng)
-            n_time_0T, n_samples_0T_per_time, _ = self.pde_instance.dataset["0T"].shape
-            
+            n_trajectories, n_time_stamps_0T, _ = self.pde_instance.dataset["0T"].shape #TODO: check if there is a bug!!!
 
             interval_time = 5
-            time_index = jnp.arange(n_time_0T//interval_time) * interval_time
+            time_index = jnp.arange(n_time_stamps_0T//interval_time) * interval_time
             shift = random.randint(rng_time, [], 0, interval_time)
             random_time_index = time_index + shift
             
@@ -84,10 +83,10 @@ class ConsistencyBased(Method):
             # sample_index = jnp.arange(n_samples_0T_per_time/intetval_sample) * intetval_sample
             # shift = random.randint(rng_sample, [], 0, intetval_sample)
             # random_sample_index = sample_index + shift
-            random_sample_index = random.permutation(rng_sample, jnp.arange(n_samples_0T_per_time))[:n_samples_0T_per_time//interval_sample]
+            random_sample_index = random.permutation(rng_sample, jnp.arange(n_trajectories))[:n_trajectories//interval_sample]
 
-            data_0T = self.pde_instance.dataset["0T"][random_time_index]
-            data_0T = data_0T[:, random_sample_index, :]
+            data_0T = self.pde_instance.dataset["0T"][random_sample_index]
+            data_0T = data_0T[:, random_time_index, :]
             # flatten data["0T"]
             data["0T"] = data_0T.reshape((prod(data_0T.shape[:2]), *data_0T.shape[2:]))
         else:

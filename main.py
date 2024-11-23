@@ -5,6 +5,7 @@ import optax
 import jax.random as random
 from core.trainer import JaxTrainer
 from registry import get_pde_instance, get_method
+from core.log_density_estimation import estimate_log_density
 
 
 def get_optimizer(optimizer_cfg: DictConfig):
@@ -39,14 +40,17 @@ def main(cfg):
         # Track hyperparameters and run metadata
         config=OmegaConf.to_container(cfg),
     )
-
-    rng_problem, rng_method, rng_trainer = random.split(random.PRNGKey(cfg.seed), 3)
+    seeds_keys = ["rng_problem", "rng_method", "rng_trainer", "rng_log_density"]
+    seeds = dict(zip(seeds_keys, random.split(random.PRNGKey(cfg.seed), len(seeds_keys))))
 
     # create problem instance
-    pde_instance = get_pde_instance(cfg)(cfg=cfg, rng=rng_problem)
+    pde_instance = get_pde_instance(cfg)(cfg=cfg, rng=seeds["rng_problem"])
+
+    # estimate log-density
+    # log_density = estimate_log_density(cfg, pde_instance, seeds["rng_log_density"])
 
     # create method instance
-    method = get_method(cfg)(pde_instance=pde_instance, cfg=cfg, rng=rng_method)
+    method = get_method(cfg)(pde_instance=pde_instance, cfg=cfg, rng=seeds["rng_method"])
 
     # create model
     net, params = method.create_model_fn()
@@ -55,7 +59,7 @@ def main(cfg):
     optimizer = get_optimizer(cfg.train.optimizer)
 
     # Construct the JaxTrainer
-    trainer = JaxTrainer(cfg=cfg, method=method, rng=rng_trainer, forward_fn=net.apply,
+    trainer = JaxTrainer(cfg=cfg, method=method, rng=seeds["rng_trainer"], forward_fn=net.apply,
                          params=params, optimizer=optimizer)
 
     # Fit the model
