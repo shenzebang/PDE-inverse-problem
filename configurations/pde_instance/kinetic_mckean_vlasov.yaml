@@ -1,0 +1,17 @@
+domain_dim: !!int 4
+domain_min: !!float -10
+domain_max: !!float 10
+boundary_condition: !!str None
+diffusion_coefficient: !!float 2
+total_evolving_time: !!float 2
+name: !!str Kinetic-McKean-Vlasov
+potential: !!str Quadratic # either Quadratic or GMM
+sample_mode: !!str online # either online or offline
+# parameters for online
+n_steps: !!int 100
+# parameters for offline
+sample_initial_size: !!int 500000
+sample_terminal_size: !!int 200000
+sample_0T_size: !!int 20000
+n_steps_terminal: !!int 400
+n_steps_0T: !!int 400
